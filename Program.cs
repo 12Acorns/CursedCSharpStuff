@@ -1,7 +1,6 @@
-﻿using CSPP.Memory;
-using System.Runtime.InteropServices;
-using static CSPP.Memory.StdLib;
-using std = CSPP.Memory;
+﻿using CSPP.lib.std.allocator.arena;
+using CSPP.lib.std.allocator;
+using CSPP.lib.std.text;
 
 unsafe
 {
@@ -9,36 +8,18 @@ unsafe
 
 	int main()
 	{
-		_ =	cout << "Hello, World!" << endl;
-		_ =	std::StdLib.cout << "Hello, World!" << std::StdLib.endl;
-		printStuff();
+		var arena = ArenaAllocator.CreateUnmanaged<char>(30, AllocatorDisposalMode.ClearUsed);
 
-		// cause GC pressure, causes finalizer to be called
-		// causes unique_pointer to be freed inturn
-		// in real world case just wait until gc natually runs
-		while(true)
-		{
-			var s = new string('a', 100);
-		}
+		var c_str = new c_string<ArenaAllocator>(arena.Pointer, "Hello, World!");
+
+		Console.WriteLine(c_str);
+		Console.Out.WriteLine(c_str.GetContent(stackalloc char[c_str.Length()]));
+
+		arena.Pointer->Dispose();
+
+		Console.WriteLine(c_str);
+		Console.Out.WriteLine(c_str.GetContent(stackalloc char[c_str.Length()]));
+
 		return 1;
-	}
-	void printStuff()
-	{
-		std::unique_ptr<std::Arena> arena = std::Arena.CreateUnmanaged<int>(100);
-
-
-		int iter = 0;
-		while(arena.getPointer()->TryNewBlock(20 * sizeof(int), out var ptr2))
-		{
-			for(int i = 0; i < ptr2.LengthFromOffsetInBytes / sizeof(int); i++)
-			{
-				int* offset = (int*)ptr2.OffsetFromStart;
-				offset[i] = iter;
-
-				_ = cout << offset[i] << endl;
-				iter++;
-			}
-			_ = cout << endl;
-		}
 	}
 }
